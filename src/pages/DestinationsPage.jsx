@@ -1,55 +1,92 @@
-import { useState } from "react"
-import DestinationCard from "../components/DestinationCard"
-import { Search } from 'lucide-react'
-
-const destinations = [
-  { id: 1, name: "Paris", country: "France", price: 1200, image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400", rating: 4.8 },
-  { id: 2, name: "Tokyo", country: "Japan", price: 1500, image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400", rating: 4.9 },
-  { id: 3, name: "New York", country: "USA", price: 900, image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400", rating: 4.7 },
-  { id: 4, name: "Bali", country: "Indonesia", price: 800, image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400", rating: 4.9 },
-  { id: 5, name: "London", country: "UK", price: 1100, image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400", rating: 4.6 },
-  { id: 6, name: "Dubai", country: "UAE", price: 1300, image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400", rating: 4.8 }
-]
+import { useState, useEffect } from "react"
+import { useTrip } from "../contexts/TripContext"
 
 export default function DestinationsPage() {
+  const [destinations, setDestinations] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  
-  const filtered = destinations.filter(dest => 
+  const { addToItinerary } = useTrip()
+
+  useEffect(() => {
+    const loadDestinations = async () => {
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,capital,flags,population,region')
+        const data = await response.json()
+        
+        const formatted = data.slice(0, 12).map((country, i) => ({
+          id: i,
+          name: country.name.common,
+          capital: country.capital?.[0] || "Unknown",
+          region: country.region,
+          population: country.population.toLocaleString(),
+          price: Math.floor(Math.random() * 1500) + 500,
+          image: country.flags?.png || "https://placehold.co/400x250/4169E1/white?text=Country"
+        }))
+        
+        setDestinations(formatted)
+        setLoading(false)
+      } catch (err) {
+        console.error(err)
+        setLoading(false)
+      }
+    }
+    
+    loadDestinations()
+  }, [])
+
+  const filtered = destinations.filter(dest =>
     dest.name.toLowerCase().includes(search.toLowerCase()) ||
-    dest.country.toLowerCase().includes(search.toLowerCase())
+    dest.region.toLowerCase().includes(search.toLowerCase())
   )
+
+  if (loading) {
+    return <div className="loading">🌍 Loading amazing destinations...</div>
+  }
 
   return (
     <div>
-      <h2 className="page-title" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        Explore Amazing Destinations 🌍
-      </h2>
-      <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#666' }}>
-        Discover the most beautiful places around the world
-      </p>
-      
-      <div className="search-wrapper">
-        <Search size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
-        <input 
-          className="search-box"
-          placeholder="Search by destination name or country..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ paddingLeft: '50px' }}
-        />
+      <div className="page-header">
+        <h1>✨ <span>Explore Destinations</span> ✨</h1>
+        <p>Discover beautiful places around the world with our colorful guide</p>
       </div>
-      
+
+      <input
+        type="text"
+        className="search-box"
+        placeholder="🔍 Search by country or region..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
       <div className="destinations-grid">
         {filtered.map(dest => (
-          <DestinationCard key={dest.id} destination={dest} />
+          <div key={dest.id} className="destination-card">
+            <img src={dest.image} alt={dest.name} />
+            <div className="destination-info">
+              <h3>{dest.name}</h3>
+              <p>📍 {dest.capital}</p>
+              <p>🌍 {dest.region}</p>
+              <p>👥 {dest.population}</p>
+              <p className="destination-price">💰 ${dest.price}</p>
+              <button 
+                className="btn btn-success"
+                onClick={() => addToItinerary({ 
+                  name: dest.name, 
+                  price: dest.price,
+                  type: "destination"
+                })}
+                style={{ width: '100%', marginTop: '8px' }}
+              >
+                💖 Add to Itinerary
+              </button>
+            </div>
+          </div>
         ))}
       </div>
-      
+
       {filtered.length === 0 && (
         <div className="empty-state">
-          <div className="empty-state-icon">🔍</div>
-          <h3>No destinations found</h3>
-          <p>Try searching with a different keyword</p>
+          <p>😢 No destinations found. Try a different search!</p>
         </div>
       )}
     </div>

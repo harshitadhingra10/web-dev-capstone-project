@@ -35,9 +35,24 @@ export const TripProvider = ({ children }) => {
     })
   }
 
+  const removeExpense = (id) => {
+    const expenseToRemove = budget.expenses.find(exp => exp.id === id)
+    if (expenseToRemove) {
+      setBudget({
+        total: budget.total - expenseToRemove.amount,
+        expenses: budget.expenses.filter(exp => exp.id !== id)
+      })
+    }
+  }
+
   return (
     <TripContext.Provider value={{
-      itinerary, addToItinerary, removeFromItinerary, budget, addExpense
+      itinerary,
+      addToItinerary,
+      removeFromItinerary,
+      budget,
+      addExpense,
+      removeExpense
     }}>
       {children}
     </TripContext.Provider>
